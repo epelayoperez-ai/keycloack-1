@@ -1,16 +1,28 @@
-# Lab 02 — Proteger Rutas con Guards
+# 📄 01-instalar-keycloak-js.md (REESCRITO)
 
-## Paso 01 — Crear un Auth Guard
+---
+
+# Lab 02 — Integrar Keycloak (Bootstrap Manual)
+
+## Paso 01 — Instalar keycloak-js
 
 ---
 
 ## 🎯 Objetivo
 
-Crear un **Route Guard** que permita proteger rutas en función del estado de autenticación.
+Instalar el **adapter oficial de Keycloak para aplicaciones JavaScript** y preparar la aplicación Angular para inicializar autenticación antes del arranque.
+
+En este laboratorio trabajaremos:
+
+* Sin wrapper
+* Sin magia
+* Sin automatismos
+
+Queremos entender cómo funciona realmente la integración.
 
 ---
 
-## 📍 Crear el guard
+## 📍 Ubicación
 
 Desde:
 
@@ -18,57 +30,82 @@ Desde:
 apps/angular-app/angular-app
 ```
 
+---
+
+## 🛠 Instalar dependencia oficial
+
 Ejecuta:
 
 ```bash
-npx ng generate guard auth
-```
-
-Selecciona la opción:
-
-```
-CanActivate
+npm install keycloak-js
 ```
 
 ---
 
-## 📁 Editar el archivo generado
+## 📦 ¿Qué es keycloak-js?
 
-Abre:
+`keycloak-js` es el adapter oficial de Keycloak para aplicaciones SPA.
 
-```
-src/app/auth.guard.ts
-```
+Nos permite:
 
----
+* Iniciar sesión (Authorization Code + PKCE)
+* Gestionar tokens (access + refresh)
+* Detectar expiración
+* Hacer logout
+* Consultar claims del usuario
 
-## ✍️ Implementar la lógica
+Importante:
 
-Reemplaza el contenido por el siguiente:
+👉 No es un wrapper Angular
+👉 No gestiona el ciclo de vida de Angular
+👉 No bloquea el bootstrap automáticamente
 
-```typescript
-import { CanActivateFn } from '@angular/router';
-import { getKeycloakInstance } from './keycloak.service';
-
-export const authGuard: CanActivateFn = () => {
-  const keycloak = getKeycloakInstance();
-
-  if (keycloak?.authenticated) {
-    return true;
-  }
-
-  keycloak.login();
-  return false;
-};
-```
+Eso lo haremos nosotros manualmente.
 
 ---
 
-## 🧠 Qué hace este guard
+## 🧠 Concepto clave — ¿Qué significa bootstrapear autenticación?
 
-* Verifica si el usuario está autenticado.
-* Si no lo está, redirige al login.
-* Impide el acceso a la ruta protegida.
-* Permite el acceso si el token es válido.
+En una SPA autenticada:
 
-En el siguiente paso aplicaremos este guard a una ruta concreta.
+1. El usuario puede venir redirigido desde Keycloak.
+2. Hay que procesar el `code` que viene en la URL.
+3. Hay que intercambiarlo por tokens.
+4. Hay que validar la sesión.
+5. Solo entonces Angular debería arrancar completamente.
+
+Si no hacemos esto correctamente:
+
+* Los guards pueden ejecutarse antes de que Keycloak esté listo.
+* Puede haber loops de login.
+* Puede fallar la validación del token.
+
+Por eso el siguiente paso será:
+
+👉 Inicializar Keycloak antes de arrancar Angular.
+
+---
+
+## ✅ Resultado esperado
+
+Tras este paso:
+
+* La dependencia `keycloak-js` estará instalada.
+* La aplicación aún no está autenticada.
+* Estamos listos para crear el servicio de inicialización.
+
+---
+
+## ➡️ Siguiente paso
+
+En el siguiente archivo:
+
+```
+02-configurar-init.md
+```
+
+Crearemos el servicio que:
+
+* Instancia Keycloak
+* Ejecuta `init()`
+* Bloquea el bootstrap de Angular hasta resolver autenticación.

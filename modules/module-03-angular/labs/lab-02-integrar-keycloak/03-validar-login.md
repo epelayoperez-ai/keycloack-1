@@ -1,12 +1,19 @@
-# Lab 02 — Integrar Keycloak
+# Lab 02 — Integrar Keycloak (Bootstrap Manual)
 
-## Paso 03 — Validar el login automático
+## Paso 03 — Validar la inicialización
 
 ---
 
 ## 🎯 Objetivo
 
-Verificar que la aplicación Angular redirige automáticamente a Keycloak y que el flujo de autenticación funciona correctamente.
+Comprobar que:
+
+* Keycloak se inicializa correctamente antes del arranque.
+* La aplicación conoce el estado de autenticación.
+* No hay redirecciones automáticas.
+* El ciclo de bootstrap está bajo nuestro control.
+
+En este laboratorio **no forzamos login todavía**.
 
 ---
 
@@ -14,13 +21,8 @@ Verificar que la aplicación Angular redirige automáticamente a Keycloak y que 
 
 Desde:
 
-```
-apps/angular-app/angular-app
-```
-
-Ejecutar:
-
 ```bash
+apps/angular-app/angular-app
 npm start
 ```
 
@@ -36,46 +38,77 @@ http://localhost:4200
 
 ---
 
-## 🔐 Comportamiento esperado
+## 🔎 Comportamiento esperado
 
-Al cargar la aplicación:
+* La aplicación Angular se muestra normalmente.
+* No hay redirección automática a Keycloak.
+* No aparecen errores en consola.
+* La URL no contiene `?code=`.
 
-* Angular NO debe mostrarse inmediatamente.
-* El navegador debe redirigir a Keycloak.
-* Debe aparecer la pantalla de login del realm `training`.
+Esto ocurre porque estamos usando:
 
----
-
-## 🔑 Iniciar sesión
-
-Usar:
-
-```
-Usuario: user1
-Contraseña: password
+```ts
+onLoad: 'check-sso'
 ```
 
 ---
 
-## 🔁 Redirección correcta
+# 🧪 Validar el estado de autenticación
 
-Tras autenticarse:
+Editar temporalmente:
 
-* Keycloak debe redirigir de nuevo a:
+```
+src/app/app.component.ts
+```
 
-  ```
-  http://localhost:4200
-  ```
+Añadir:
 
-* La aplicación Angular debe mostrarse correctamente.
+```ts
+import { getKeycloakInstance } from './keycloak.service';
 
-* No deben aparecer errores en consola.
+ngOnInit() {
+  const kc = getKeycloakInstance();
+  console.log('Inicializado:', !!kc);
+  console.log('Autenticado:', kc?.authenticated);
+}
+```
 
 ---
 
-## 🧠 Qué estamos validando
+## 📊 Resultado esperado en consola
 
-* El flujo Authorization Code con PKCE funciona desde Angular.
-* Keycloak se inicializa antes del bootstrap.
-* El usuario queda autenticado en la aplicación.
-* La sesión se mantiene activa tras el redireccionamiento.
+Si no hay sesión:
+
+```
+Inicializado: true
+Autenticado: false
+```
+
+Si ya existía sesión activa en el navegador:
+
+```
+Inicializado: true
+Autenticado: true
+```
+
+---
+
+# 🧠 Qué estamos validando realmente
+
+✔ `keycloak.init()` se ejecuta antes de arrancar Angular
+✔ El adapter procesa posibles redirecciones
+✔ La instancia está disponible globalmente
+✔ El estado de autenticación está resuelto
+
+Esto es bootstrapear autenticación manualmente.
+
+---
+
+# 🧩 Qué NO estamos haciendo todavía
+
+* No protegemos rutas.
+* No forzamos login.
+* No usamos guards.
+* No usamos wrapper Angular.
+
+Todo eso viene en el siguiente laboratorio.

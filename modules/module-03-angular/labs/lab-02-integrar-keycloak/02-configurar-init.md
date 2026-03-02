@@ -1,4 +1,4 @@
-# Lab 02 — Integrar Keycloak
+# Lab 02 — Integrar Keycloak (Bootstrap Manual)
 
 ## Paso 02 — Configurar e integrar la inicialización
 
@@ -6,7 +6,14 @@
 
 ## 🎯 Objetivo
 
-Configurar correctamente la inicialización de Keycloak y dejarla integrada en el arranque de la aplicación Angular.
+Configurar correctamente la inicialización de Keycloak y asegurarnos de que:
+
+* Keycloak se inicializa antes de que Angular arranque.
+* Se procesan posibles redirecciones desde el servidor.
+* El estado de autenticación queda disponible desde el inicio.
+
+En este paso **no forzaremos login obligatorio todavía**.
+Queremos entender primero el proceso de bootstrap.
 
 ---
 
@@ -20,7 +27,7 @@ apps/angular-app/angular-app/src/app
 
 ---
 
-## 📁 Crear archivo de configuración
+# 🛠 Paso 1 — Crear archivo de configuración
 
 Crear:
 
@@ -40,7 +47,17 @@ export const keycloakConfig = {
 
 ---
 
-## 📁 Crear servicio de integración
+## 🧠 Por qué separar la configuración
+
+Separar configuración permite:
+
+* Cambiar entorno fácilmente (dev / prod)
+* No mezclar credenciales con lógica
+* Reutilizar en futuras integraciones (wrapper)
+
+---
+
+# 🛠 Paso 2 — Crear servicio de inicialización
 
 Crear:
 
@@ -64,7 +81,7 @@ export function initializeKeycloak(): Promise<boolean> {
   });
 
   return keycloak.init({
-    onLoad: 'login-required',
+    onLoad: 'check-sso',
     pkceMethod: 'S256',
     checkLoginIframe: false
   });
@@ -77,7 +94,42 @@ export function getKeycloakInstance(): Keycloak {
 
 ---
 
-## 📍 Integrar en el arranque
+## 🧠 Qué hace init()
+
+`keycloak.init()`:
+
+1. Procesa si la URL contiene `?code=...`
+2. Intercambia el authorization code por tokens
+3. Valida sesión existente
+4. Deja disponible:
+
+```typescript
+keycloak.authenticated
+keycloak.token
+keycloak.tokenParsed
+```
+
+---
+
+## 🔎 Por qué usamos `check-sso`
+
+Usamos:
+
+```typescript
+onLoad: 'check-sso'
+```
+
+Porque:
+
+* No fuerza login automático.
+* Permite que la aplicación arranque sin sesión.
+* Nos permite observar el estado antes de proteger rutas.
+
+Más adelante cambiaremos a `login-required`.
+
+---
+
+# 🛠 Paso 3 — Integrar en el arranque (bootstrap real)
 
 Abrir:
 
@@ -97,18 +149,49 @@ initializeKeycloak()
     bootstrapApplication(AppComponent)
       .catch(err => console.error(err));
   })
-  .catch(err => console.error('Keycloak init failed', err));
+  .catch(err => {
+    console.error('Keycloak init failed', err);
+  });
 ```
 
 ---
 
-## 🧠 Estado esperado tras este paso
+## 🧠 Qué está pasando realmente
 
-* Keycloak está configurado con:
+ANTES de que Angular arranque:
 
-  * URL
-  * Realm
-  * Client ID
-  * PKCE habilitado
-* La aplicación no arranca hasta que Keycloak se inicializa.
-* El login será obligatorio en el siguiente paso al validar el comportamiento.
+1. Se inicializa Keycloak.
+2. Se valida si existe sesión.
+3. Se procesan posibles tokens.
+4. Solo entonces Angular se monta.
+
+Esto evita:
+
+* Guards ejecutándose antes de tiempo.
+* Loops de login.
+* Estados inconsistentes.
+
+Esto es bootstrapear autenticación manualmente.
+
+---
+
+# ✅ Estado esperado tras este paso
+
+✔ keycloak-js instalado
+✔ Configuración separada
+✔ Servicio de inicialización creado
+✔ Angular bloquea su arranque hasta que Keycloak resuelve
+
+Si ejecutas la aplicación ahora, debería arrancar sin forzar login.
+
+---
+
+## ➡️ Siguiente paso
+
+En:
+
+```
+03-validar-login.md
+```
+
+Añadiremos botones de login y logout para observar el flujo Authorization Code + PKCE en acción.
