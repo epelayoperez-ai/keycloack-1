@@ -1,6 +1,20 @@
-version: "3.8"
 
 services:
+  # angular-app:
+  #   image: node:latest
+  #   command:
+  #     - sh
+  #     - -c
+  #     - |
+  #       npm install && npm run start
+  #   working_dir: /app
+  #   ports:
+  #     - "4200:4200"
+  #   volumes:
+  #     - ../apps/angular-app_/:/app   
+  #   # depends_on:
+  #   #   - keycloak
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     command:
